@@ -7,19 +7,19 @@ on:
   workflow_dispatch:
     inputs:
       base_repo_url:
-        description: 'URL of the base repository'
+        description: 'Base Repository URL'
         required: true
       base_branch:
-        description: 'Branch of the base repository'
+        description: 'Base Branch'
         required: true
       port_repo_url:
-        description: 'URL of the port repository'
+        description: 'Port Repository URL'
         required: true
       port_branch:
-        description: 'Branch of the port repository'
+        description: 'Port Branch'
         required: true
       artifact_name:
-        description: 'Name of the artifact'
+        description: 'Artifact Name'
         required: true
 
 jobs:
@@ -27,35 +27,29 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout base code
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ github.event.inputs.base_repo_url }}
-        ref: ${{ github.event.inputs.base_branch }}
-      
     - name: Set up Git user
       run: |
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
       
-    - name: Clone port repository
-      run: |
-        git clone ${{ github.event.inputs.port_repo_url }} port
-        cd port
-        git checkout master || true  # Checkout 'master' branch, ignore errors if already exists
-        git checkout -b ${{ github.event.inputs.port_branch }}  # Create and checkout the new branch
-        cd ..
+    - name: Checkout base code
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ github.event.inputs.base_repo_url }}
+        ref: ${{ github.event.inputs.base_branch }}
+      working-directory: base
       
-    - name: Copy files from base repository to port repository
-      run: cp -R ./* port
+    - name: Checkout port code
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ github.event.inputs.port_repo_url }}
+        ref: ${{ github.event.inputs.port_branch }}
+      working-directory: port
       
     - name: Push commits to port repository
       run: |
-        cd port
-        git add .
-        git commit -m "Porting changes from base repository"
-        git push origin ${{ github.event.inputs.port_branch }}
-        cd ..
+        cd base
+        git push --mirror ../port
       
     - name: Zip ported directory
       run: zip -r ${{ github.event.inputs.artifact_name }}.zip port
