@@ -12,23 +12,20 @@ jobs:
     
     steps:
     - name: Set up Git repository details
+      id: input_repo_details
       run: |
-        echo "Enter the URL of the base repository:"
-        read base_repo_url
-        echo "Enter the branch of the base repository:"
-        read base_branch
-        echo "Enter the URL of the port repository:"
-        read port_repo_url
-        echo "Enter the branch of the port repository:"
-        read port_branch
-        echo "Enter the name of the artifact:"
-        read artifact_name
+        echo "::set-output name=base_repo_url::${{ github.event.inputs.base_repo_url }}"
+        echo "::set-output name=base_branch::${{ github.event.inputs.base_branch }}"
+        echo "::set-output name=port_repo_url::${{ github.event.inputs.port_repo_url }}"
+        echo "::set-output name=port_branch::${{ github.event.inputs.port_branch }}"
+        echo "::set-output name=artifact_name::${{ github.event.inputs.artifact_name }}"
+      shell: bash
       
     - name: Checkout base code
       uses: actions/checkout@v2
       with:
-        repository: ${{ base_repo_url }}
-        ref: ${{ base_branch }}
+        repository: ${{ steps.input_repo_details.outputs.base_repo_url }}
+        ref: ${{ steps.input_repo_details.outputs.base_branch }}
       
     - name: Set up Git user
       run: |
@@ -37,9 +34,9 @@ jobs:
       
     - name: Clone port repository
       run: |
-        git clone ${{ port_repo_url }} port
+        git clone ${{ steps.input_repo_details.outputs.port_repo_url }} port
         cd port
-        git checkout -b ${{ port_branch }}
+        git checkout -b ${{ steps.input_repo_details.outputs.port_branch }}
         cd ..
       
     - name: Copy files from base repository to port repository
@@ -50,14 +47,31 @@ jobs:
         cd port
         git add .
         git commit -m "Porting changes from base repository"
-        git push origin ${{ port_branch }}
+        git push origin ${{ steps.input_repo_details.outputs.port_branch }}
         cd ..
       
     - name: Zip ported directory
-      run: zip -r ${{ artifact_name }}.zip port
+      run: zip -r ${{ steps.input_repo_details.outputs.artifact_name }}.zip port
       
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ artifact_name }}
-        path: ${{ artifact_name }}.zip
+        name: ${{ steps.input_repo_details.outputs.artifact_name }}
+        path: ${{ steps.input_repo_details.outputs.artifact_name }}.zip
+
+inputs:
+  base_repo_url:
+    description: 'URL of the base repository'
+    required: true
+  base_branch:
+    description: 'Branch of the base repository'
+    required: true
+  port_repo_url:
+    description: 'URL of the port repository'
+    required: true
+  port_branch:
+    description: 'Branch of the port repository'
+    required: true
+  artifact_name:
+    description: 'Name of the artifact'
+    required: true
