@@ -31,27 +31,40 @@ jobs:
       run: |
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
-      
+    
     - name: Checkout base code
       uses: actions/checkout@v2
       with:
         repository: ${{ github.event.inputs.base_repo_url }}
         ref: ${{ github.event.inputs.base_branch }}
+      id: checkout_base
       
     - name: Checkout port code
       uses: actions/checkout@v2
       with:
         repository: ${{ github.event.inputs.port_repo_url }}
         ref: ${{ github.event.inputs.port_branch }}
-      
+      id: checkout_port
+
+    - name: Set base repo URL
+      run: echo "::set-env name=BASE_REPO_PATH::$(pwd)"
+      shell: bash
+
+    - name: Set port repo URL
+      run: echo "::set-env name=PORT_REPO_PATH::$(pwd)"
+      shell: bash
+
     - name: Push commits to port repository
       run: |
-        cd $GITHUB_WORKSPACE/base
-        git push --mirror ../port
-      
+        cd $BASE_REPO_PATH
+        git log --reverse --pretty=format:%H | while read commit_hash; do
+          git cherry-pick $commit_hash || git cherry-pick --abort
+        done
+      shell: bash
+
     - name: Zip ported directory
       run: |
-        cd $GITHUB_WORKSPACE/port
+        cd $PORT_REPO_PATH
         zip -r ${{ github.event.inputs.artifact_name }}.zip .
       
     - name: Upload artifact
