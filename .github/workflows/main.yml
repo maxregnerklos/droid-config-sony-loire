@@ -37,22 +37,22 @@ jobs:
       with:
         repository: ${{ github.event.inputs.base_repo_url }}
         ref: ${{ github.event.inputs.base_branch }}
-      working-directory: base
       
     - name: Checkout port code
       uses: actions/checkout@v2
       with:
         repository: ${{ github.event.inputs.port_repo_url }}
         ref: ${{ github.event.inputs.port_branch }}
-      working-directory: port
       
     - name: Push commits to port repository
       run: |
-        cd base
+        cd $GITHUB_WORKSPACE/base
         git push --mirror ../port
       
     - name: Zip ported directory
-      run: zip -r ${{ github.event.inputs.artifact_name }}.zip port
+      run: |
+        cd $GITHUB_WORKSPACE/port
+        zip -r ${{ github.event.inputs.artifact_name }}.zip .
       
     - name: Upload artifact
       uses: actions/upload-artifact@v2
