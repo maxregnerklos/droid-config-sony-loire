@@ -5,27 +5,33 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      base_repo_url:
+        description: 'URL of the base repository'
+        required: true
+      base_branch:
+        description: 'Branch of the base repository'
+        required: true
+      port_repo_url:
+        description: 'URL of the port repository'
+        required: true
+      port_branch:
+        description: 'Branch of the port repository'
+        required: true
+      artifact_name:
+        description: 'Name of the artifact'
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Set up Git repository details
-      id: input_repo_details
-      run: |
-        echo "::set-output name=base_repo_url::${{ github.event.inputs.base_repo_url }}"
-        echo "::set-output name=base_branch::${{ github.event.inputs.base_branch }}"
-        echo "::set-output name=port_repo_url::${{ github.event.inputs.port_repo_url }}"
-        echo "::set-output name=port_branch::${{ github.event.inputs.port_branch }}"
-        echo "::set-output name=artifact_name::${{ github.event.inputs.artifact_name }}"
-      shell: bash
-      
     - name: Checkout base code
       uses: actions/checkout@v2
       with:
-        repository: ${{ steps.input_repo_details.outputs.base_repo_url }}
-        ref: ${{ steps.input_repo_details.outputs.base_branch }}
+        repository: ${{ github.event.inputs.base_repo_url }}
+        ref: ${{ github.event.inputs.base_branch }}
       
     - name: Set up Git user
       run: |
@@ -34,9 +40,9 @@ jobs:
       
     - name: Clone port repository
       run: |
-        git clone ${{ steps.input_repo_details.outputs.port_repo_url }} port
+        git clone ${{ github.event.inputs.port_repo_url }} port
         cd port
-        git checkout -b ${{ steps.input_repo_details.outputs.port_branch }}
+        git checkout -b ${{ github.event.inputs.port_branch }}
         cd ..
       
     - name: Copy files from base repository to port repository
@@ -47,31 +53,14 @@ jobs:
         cd port
         git add .
         git commit -m "Porting changes from base repository"
-        git push origin ${{ steps.input_repo_details.outputs.port_branch }}
+        git push origin ${{ github.event.inputs.port_branch }}
         cd ..
       
     - name: Zip ported directory
-      run: zip -r ${{ steps.input_repo_details.outputs.artifact_name }}.zip port
+      run: zip -r ${{ github.event.inputs.artifact_name }}.zip port
       
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ steps.input_repo_details.outputs.artifact_name }}
-        path: ${{ steps.input_repo_details.outputs.artifact_name }}.zip
-
-inputs:
-  base_repo_url:
-    description: 'URL of the base repository'
-    required: true
-  base_branch:
-    description: 'Branch of the base repository'
-    required: true
-  port_repo_url:
-    description: 'URL of the port repository'
-    required: true
-  port_branch:
-    description: 'Branch of the port repository'
-    required: true
-  artifact_name:
-    description: 'Name of the artifact'
-    required: true
+        name: ${{ github.event.inputs.artifact_name }}
+        path: ${{ github.event.inputs.artifact_name }}.zip
