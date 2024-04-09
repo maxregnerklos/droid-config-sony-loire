@@ -42,7 +42,8 @@ jobs:
       run: |
         git clone ${{ github.event.inputs.port_repo_url }} port
         cd port
-        git checkout -b ${{ github.event.inputs.port_branch }}
+        git checkout master || true  # Checkout 'master' branch, ignore errors if already exists
+        git checkout -b ${{ github.event.inputs.port_branch }}  # Create and checkout the new branch
         cd ..
       
     - name: Copy files from base repository to port repository
