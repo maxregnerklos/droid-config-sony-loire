@@ -1,0 +1,48 @@
+name: Upstream and Upload Artifact
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set up Git repository details
+      run: |
+        echo "Enter the URL of the source repository:"
+        read source_repo_url
+        echo "Enter the branch of the source repository:"
+        read source_branch
+        echo "Enter the URL of the upstream repository:"
+        read upstream_repo_url
+        echo "Enter the branch of the upstream repository:"
+        read upstream_branch
+        echo "Enter the name of the artifact:"
+        read artifact_name
+      
+    - name: Checkout source code
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ source_repo_url }}
+        ref: ${{ source_branch }}
+      
+    - name: Install git
+      run: sudo apt-get install git -y
+      
+    - name: Clone upstream repository
+      run: git clone ${{ upstream_repo_url }} upstream
+      
+    - name: Copy files from cloned repository to upstream repository
+      run: cp -R ./* upstream
+      
+    - name: Zip files
+      run: zip -r ${{ artifact_name }}.zip upstream
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ artifact_name }}
+        path: ${{ artifact_name }}.zip
