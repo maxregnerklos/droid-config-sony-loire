@@ -46,17 +46,19 @@ jobs:
         ref: ${{ github.event.inputs.port_branch }}
       id: checkout_port
 
-    - name: Set base repo URL
-      run: echo "::set-env name=BASE_REPO_PATH::$(pwd)"
+    - name: Set base repo path
+      id: set_base_repo_path
+      run: echo "::set-output name=base_repo_path::$(pwd)"
       shell: bash
 
-    - name: Set port repo URL
-      run: echo "::set-env name=PORT_REPO_PATH::$(pwd)"
+    - name: Set port repo path
+      id: set_port_repo_path
+      run: echo "::set-output name=port_repo_path::$(pwd)"
       shell: bash
 
     - name: Push commits to port repository
       run: |
-        cd $BASE_REPO_PATH
+        cd ${{ steps.set_base_repo_path.outputs.base_repo_path }}
         git log --reverse --pretty=format:%H | while read commit_hash; do
           git cherry-pick $commit_hash || git cherry-pick --abort
         done
@@ -64,7 +66,7 @@ jobs:
 
     - name: Zip ported directory
       run: |
-        cd $PORT_REPO_PATH
+        cd ${{ steps.set_port_repo_path.outputs.port_repo_path }}
         zip -r ${{ github.event.inputs.artifact_name }}.zip .
       
     - name: Upload artifact
